@@ -1,0 +1,63 @@
+##################################
+### 1. Data #####################
+
+# This script presumes you have run scripts 1-6
+
+##################################
+### 2. Load R packages ###########
+
+library(tidyverse)
+library(janitor)
+library(DataExplorer)
+
+##################################
+### 3. Define cleaning function ##
+
+cleaning <- function(data) {
+  # Remove participants with extreme values (top 0.001%)
+  # Determine the threshold values
+  
+  # Define a vector of columns to clean
+  columns_to_clean <- c("whr", "bmi", "hip_circumference", "waist_circumference", 
+                        "adjca", "phosphate", "vitamin_d", "creatinine", "urea", 
+                        "cystatin_c", "hdl", "ldl", "triglycerides", "albumin", 
+                        "calcium", "hba1c", "na_urine", "k_urine", "creatinine_urine", 
+                        "urate", "fluid_intake", "alt", "ast", "glucose", "bilirubin")
+  
+  # Loop through each column to remove extreme values
+  for (col in columns_to_clean) {
+    threshold_low <- quantile(data[[col]], 0.00001, na.rm = TRUE)
+    threshold_high <- quantile(data[[col]], 0.99999, na.rm = TRUE)
+    data <- data[data[[col]] >= threshold_low & data[[col]] <= threshold_high, ]
+  }
+  
+  # Drop identified columns
+  data <- data %>%
+    drop_na(participant_id)
+  
+  # Mutate age_at_first_stone
+  data <- data %>% mutate(age_at_first_stone = (time_0 - dob)/365,
+                          .keep = "unused")
+  data$age_at_first_stone <- round(as.numeric(data$age_at_first_stone),
+                                   digits = 0)
+  
+  # Plot the results
+  DataExplorer::plot_bar(data)
+  DataExplorer::plot_histogram(data)
+  
+  # Return the cleaned data
+  return(data)
+}
+
+
+##################################
+### 4. Clean data ################
+
+demographics <- demographics7                           # Can change demographics7 to alternative if necessary
+demographics <- cleaning(demographics)
+
+##################################
+### 5. Examine cleaned data #####
+
+create_report(drop_na(demographics,
+                      recurrence), y = "recurrence")
