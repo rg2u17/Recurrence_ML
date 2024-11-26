@@ -1,0 +1,185 @@
+################################
+### 1. Get data ################
+
+# This script presumes that scripts 1-7 have been completed
+
+#################################
+### 2. Load R packages ##########
+
+library(tidyverse)
+library(caret)
+library(mice)
+library(ROSE)
+
+#################################
+### 3. Split demographics dataset into training and test sets
+
+set.seed(1234)
+
+demographics1 <- demographics %>% subset(select = -c(age_at_recruitment,
+                                                    non_butter_spread_type_details_instance_0,
+                                                    #time_to_recurrence_1,
+                                                    #time_to_recurrence_1_less5,
+                                                    #time_to_recurrence_1_less10,
+                                                    CKD
+                                                    #last_date
+                                                    #FID
+                                                    ))
+
+
+demographics_sample <- sample(1:nrow((demographics1)),
+                              size = nrow((demographics1)) * 0.8)
+
+demographics_train <- (demographics1)[demographics_sample,]
+demographics_test<-na.omit(demographics1)[-demographics_sample,]
+
+demographics_train <- demographics_train %>% subset(select = -participant_id)
+demographics_test_ids <- demographics_test %>% subset(select = participant_id)
+demographics_test <- demographics_test %>% subset(select = -participant_id)
+
+
+#################################
+### 4. Oversample training set ##
+
+demographics_oversample <- ROSE::ovun.sample(recurrence ~ .,
+                                             demographics_train,
+                                             seed = 1234,
+                                             method = "over",
+)$data
+
+#################################
+### 5. Subdivide datasets for subanalyses + impute missing data
+
+fluid_only_train <- subset(demographics_oversample,
+                           select = c(fluid_intake,
+                                      recurrence
+                           )) %>% mice(m=2, maxit = 2, method = c('rf'), seed = 1234) %>% complete()
+
+fluid_only_test <- subset(demographics_test,
+                          select = c(fluid_intake,
+                                     recurrence
+                          ))
+diet_only_train <- subset(demographics_oversample,
+                           select = c(cooked_vegetable_intake_instance_0,
+                                      salad_raw_vegetable_intake_instance_0,
+                                      fresh_fruit_intake_instance_0,
+                                      dried_fruit_intake_instance_0,
+                                      oily_fish_intake_instance_0,
+                                      non_oily_fish_intake_instance_0,
+                                      cheese_intake_instance_0,
+                                      milk_type_used_instance_0,
+                                      spread_type_instance_0,
+                                      bread_intake_instance_0,
+                                      bread_type_instance_0,
+                                      cereal_intake_instance_0,
+                                      cereal_type_instance_0,
+                                      salt_added_to_food_instance_0,
+                                      meat_eater,
+                                      recurrence
+                           )) %>% mice(m=2, maxit = 2, method = c('rf'), seed = 1234) %>% complete()
+
+diet_only_test <- subset(demographics_test,
+                          select = c(cooked_vegetable_intake_instance_0,
+                                     salad_raw_vegetable_intake_instance_0,
+                                     fresh_fruit_intake_instance_0,
+                                     dried_fruit_intake_instance_0,
+                                     oily_fish_intake_instance_0,
+                                     non_oily_fish_intake_instance_0,
+                                     cheese_intake_instance_0,
+                                     milk_type_used_instance_0,
+                                     spread_type_instance_0,
+                                     bread_intake_instance_0,
+                                     bread_type_instance_0,
+                                     cereal_intake_instance_0,
+                                     cereal_type_instance_0,
+                                     salt_added_to_food_instance_0,
+                                     meat_eater,
+                                     recurrence
+                          ))
+
+demographics_only_train <- subset(demographics_oversample,
+                                  select = c(age_at_first_stone,
+                                             sex,
+                                             waist_circumference,
+                                             hip_circumference,
+                                             bmi,
+                                             whr,
+                                             townsend_deprivation_index_at_recruitment,
+                                             diastolic_bp,
+                                             systolic_bp,
+                                             recurrence
+                                  )) %>% mice(m=2, maxit = 2, method = c('rf'), seed = 1234) %>% complete()
+
+demographics_only_test <- subset(demographics_test,
+                                 select = c(age_at_first_stone,
+                                            sex,
+                                            waist_circumference,
+                                            hip_circumference,
+                                            bmi,
+                                            whr,
+                                            townsend_deprivation_index_at_recruitment,
+                                            diastolic_bp,
+                                            systolic_bp,
+                                            recurrence
+                                 ))
+
+demographics_serum_train <- demographics_oversample %>%
+  select(
+    -fluid_intake,
+    -starts_with("rs"),
+    -starts_with("X"),
+    -PRS,
+    -cooked_vegetable_intake_instance_0,
+    -salad_raw_vegetable_intake_instance_0,
+    -fresh_fruit_intake_instance_0,
+    -dried_fruit_intake_instance_0,
+    -oily_fish_intake_instance_0,
+    -non_oily_fish_intake_instance_0,
+    -cheese_intake_instance_0,
+    -milk_type_used_instance_0,
+    -spread_type_instance_0,
+    -bread_intake_instance_0,
+    -bread_type_instance_0,
+    -cereal_intake_instance_0,
+    -cereal_type_instance_0,
+    -salt_added_to_food_instance_0
+  ) %>% mice(m=2, maxit = 2, method = c('rf'), seed = 1234) %>% complete()
+
+demographics_serum_test <- demographics_test %>%
+  select(
+    -fluid_intake,
+    -starts_with("rs"),
+    -starts_with("X"),
+    -PRS,
+    -cooked_vegetable_intake_instance_0,
+    -salad_raw_vegetable_intake_instance_0,
+    -fresh_fruit_intake_instance_0,
+    -dried_fruit_intake_instance_0,
+    -oily_fish_intake_instance_0,
+    -non_oily_fish_intake_instance_0,
+    -cheese_intake_instance_0,
+    -milk_type_used_instance_0,
+    -spread_type_instance_0,
+    -bread_intake_instance_0,
+    -bread_type_instance_0,
+    -cereal_intake_instance_0,
+    -cereal_type_instance_0,
+    -salt_added_to_food_instance_0
+  )
+
+genetics_train <- demographics_oversample %>%
+  select(starts_with("rs"), starts_with("X"), PRS, recurrence) %>% na.omit()
+
+
+genetics_test <- demographics_test %>%
+  select(starts_with("rs"), starts_with("X"), PRS, recurrence)
+
+
+demographics_serum_diet_train <- demographics_oversample %>%
+  select(-starts_with("rs"), -starts_with("X"), -PRS) %>% mice(m=2, maxit = 2, method = c('rf'), seed = 1234) %>% complete()
+
+
+demographics_serum_diet_test <- demographics_test %>%
+  select(-starts_with("rs"), -starts_with("X"), -PRS)
+
+demographics_train <- na.omit(demographics_train)
