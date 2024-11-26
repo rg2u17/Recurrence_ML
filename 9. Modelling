@@ -1,0 +1,221 @@
+###################################
+### 1. Data #######################
+
+# This script presumes scripts 1-8 have been run
+
+###################################
+### 2. Load R packages ############
+
+library(caret)
+library(xgboost)
+
+###################################
+### 3. Define train/control and tuning grip for simple models
+
+
+recurrence_ctrl <-
+  trainControl(
+    method = "repeatedcv",
+    number = 10,
+    repeats = 2,
+    classProbs = TRUE,
+    savePredictions = TRUE,
+    p = 0.8,
+    summaryFunction = twoClassSummary
+  )
+
+turn_grid_xgb <- expand.grid(
+  eta = c(0.1, 0.5, 0.05),
+  max_depth = c(3,5,10),
+  min_child_weight = 1,
+  subsample = c(0.6,0.8,1),
+  colsample_bytree = 0.8,
+  nrounds = c(5, 10, 15),
+  gamma = 0
+)
+
+###################################
+### 4. Build simple models
+
+fluid_only_model <- caret::train(
+  recurrence ~ .,
+  data = na.omit(fluid_only_train),
+  tuneGrid = turn_grid_xgb,
+  method = "xgbTree",
+  trControl = recurrence_ctrl,
+  metric = "ROC"
+)
+
+diet_only_model <- caret::train(
+  recurrence ~ .,
+  data = na.omit(diet_only_train),
+  tuneGrid = turn_grid_xgb,
+  method = "xgbTree",
+  trControl = recurrence_ctrl,
+  metric = "ROC"
+)
+
+genetics_only_model <- caret::train(
+  recurrence ~ .,
+  data = na.omit(genetics_train),
+  tuneGrid = turn_grid_xgb,
+  method = "xgbTree",
+  trControl = recurrence_ctrl,
+  metric = "ROC"
+)
+
+demographic_only_model <- caret::train(
+  recurrence ~ .,
+  data = na.omit(demographics_only_train),
+  tuneGrid = turn_grid_xgb,
+  method = "xgbTree",
+  trControl = recurrence_ctrl,
+  metric = "ROC"
+)
+
+demographics_serum_model <- caret::train(
+  recurrence ~ .,
+  data = na.omit(demographics_serum_train),
+  tuneGrid = turn_grid_xgb,
+  method = "xgbTree",
+  trControl = recurrence_ctrl,
+  metric = "ROC"
+)
+
+demographics_serum_diet_fluid_model <- caret::train(
+  recurrence ~ .,
+  data = na.omit(demographics_serum_diet_train),
+  tuneGrid = turn_grid_xgb,
+  method = "xgbTree",
+  trControl = recurrence_ctrl,
+  metric = "ROC"
+)
+
+overall_model <- caret::train(
+  recurrence ~ .,
+  data = na.omit(demographics_oversample),
+  tuneGrid = turn_grid_xgb,
+  method = "xgbTree",
+  trControl = recurrence_ctrl,
+  metric = "ROC"
+)
+
+###################################
+### 5. Build complex model with nested cross validation
+
+# Load dataset and preprocess
+dataset <- na.omit(demographics_oversample)
+X <- dataset %>% subset(select = -recurrence) 
+X_test <- demographics_test %>% subset(select = -recurrence) 
+y <- as.factor(demographics_oversample$recurrence)  # Convert to binary outcome
+y <- ifelse(y == "ssf", 0, 1)
+y <- factor(y, levels = c(0, 1), labels = c("class0", "class1"))
+y_test <- recode_factor(demographics_test$recurrence, 
+                        "ssf" = "class0",
+                        "rsf" = "class1") %>% factor(
+                        levels = c("class0", "class1"))
+
+# Convert all factor columns to numeric
+X <- data.frame(lapply(X, function(col) {
+  if(is.factor(col)) {
+    as.numeric(as.factor(col))
+  } else {
+    col
+  }
+}))
+
+X_test <- data.frame(lapply(X_test, function(col) {
+  if(is.factor(col)) {
+    as.numeric(as.factor(col))
+  } else {
+    col
+  }
+}))
+
+# Define the parameter grid for hyperparameter tuning
+xgb_grid <- expand.grid(
+  nrounds = c(100, 500, 1000),
+  eta = c(0.01, 0.1, 0.3),
+  max_depth = c(3, 5, 7),
+  gamma = c(0, 0.1, 0.3),
+  colsample_bytree = c(0.6, 0.8, 1.0),
+  min_child_weight = c(1, 3, 5),
+  subsample = c(0.6, 0.8, 1.0)
+)
+
+# Set up the trainControl for nested cross-validation
+train_control <- trainControl(
+  method = "cv",
+  number = 5,
+  summaryFunction = twoClassSummary,
+  classProbs = TRUE,
+  savePredictions = "final",
+  verboseIter = TRUE
+)
+
+# Perform nested cross-validation
+outer_cv_results <- lapply(1:5, function(i) {
+  set.seed(i)
+  
+  # Perform hyperparameter tuning on training set
+  inner_train_control <- trainControl(
+    method = "cv",
+    number = 3,
+    summaryFunction = twoClassSummary,
+    classProbs = TRUE
+  )
+  
+  grid_search <- train(
+    x = as.matrix(X),
+    y = y,
+    method = "xgbTree",
+    trControl = inner_train_control,
+    tuneGrid = xgb_grid,
+    metric = "ROC"
+  )
+  
+  # Train the final model with the best parameters on the entire training set
+  best_params <- grid_search$bestTune
+  final_model <- xgboost(
+    data = as.matrix(X),
+    label = as.numeric(y) - 1,  # Convert to numeric labels (0 and 1)
+    params = list(
+      objective = "binary:logistic",
+      max_depth = best_params$max_depth,
+      eta = best_params$eta,
+      gamma = best_params$gamma,
+      colsample_bytree = best_params$colsample_bytree,
+      min_child_weight = best_params$min_child_weight,
+      subsample = best_params$subsample
+    ),
+    nrounds = best_params$nrounds,
+    verbose = 0
+  )
+  
+  # Predict on test set
+  predictions_prob <- predict(final_model,
+          as.matrix(X_test),
+          type = "prob")
+  
+  predictions_raw <-
+    ifelse(predictions_prob > 0.5, "class1", "class0")
+  
+  
+  # Evaluate model performance
+  cm <-
+    confusionMatrix(table(
+      pred = factor(predictions_raw, levels = c("class0", "class1")),
+      ref = y_test
+    ))
+  roc_auc <- roc(as.numeric(y_test) - 1,
+    predictions_prob)$auc
+  roc <- roc(as.numeric(y_test) - 1,
+    predictions_prob)
+  
+  list(confusionMatrix = cm,
+       roc_auc = roc_auc,
+       roc = roc,
+       final_model = final_model)
+})
+
+
