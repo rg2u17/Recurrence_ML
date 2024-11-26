@@ -1,0 +1,102 @@
+#########################################
+### 1. Get data #########################
+
+# This script presumes 2 datasets are available:
+# 1. Polygenic risk score is available: (see Recurrence_genomics repository for full script)
+# 2. Rare variants are available (derived from genomics england R256 Nephrolithiasis/Nephrocalcinosis panel)
+
+# PRS to include
+
+prs_quant_colic_to_colic <- c(FID,
+                              IID,
+                              PRS)
+
+# Rare variants to include:
+
+green_genes <- c(FID,
+IID,
+PAT,
+MAT,
+SEX,
+PHENOTYPE,
+rs12126269_A,
+rs12126269_HET,
+rs79751787_T,
+rs79751787_HET,
+rs2015352_T,
+rs2015352_HET,
+rs143663847_G,
+rs143663847_HET,
+rs2071922_A,
+rs2071922_HET,
+rs16859886_G,
+rs16859886_HET,
+rs45564939_G,
+rs45564939_HET,
+rs1884725_G,
+rs1884725_HET,
+rs17279437_G,
+rs17279437_HET,
+rs13324142_C,
+rs13324142_HET,
+rs76555381_G,
+rs76555381_HET,
+rs73225891_C,
+rs73225891_HET,
+rs77010315_C,
+rs77010315_HET,
+rs3807153_A,
+rs3807153_HET,
+rs10258719_G,
+rs10258719_HET,
+rs35804026_T,
+rs35804026_HET,
+rs3750425_C,
+rs3750425_HET,
+rs28542318_T,
+rs28542318_HET,
+rs17730281_G,
+rs17730281_HET,
+rs551225_G,
+rs551225_HET,
+rs113873219_C,
+rs113873219_HET,
+rs3744900_G,
+rs3744900_HET,
+rs594445_C,
+rs594445_HET,
+rs1057251_T,
+rs1057251_HET,
+rs1007160_G,
+rs1007160_HET)
+
+#########################################
+### 2. Load R Packages ##################
+
+library(tidyverse)
+library(janitor)
+
+#########################################
+### 3. Sort Green Genes #################
+
+green_genes[, colnames(green_genes)] <- lapply(green_genes[, colnames(green_genes)], as.numeric)
+green_genes = round(green_genes, digits = 0)
+
+#########################################
+### 4. Sort Green Genes #################
+
+# Define function to prepare PRS data
+prepare_prs_data <- function(prs_data) {
+  prs <- prs_data[-1, ] %>% as_tibble()
+  colnames(prs) <- c("FID_IID", "PRS")
+  prs <- prs %>% 
+    separate(col = FID_IID, sep = "_", into = c("FID", "IID")) %>% 
+    subset(select = c(IID, PRS))
+  prs$PRS <- as.numeric(prs$PRS)
+  prs$IID <- as.integer(prs$IID)
+  return(prs)
+}
+
+prs <- prs_quant_colic_to_colic %>% subset(select = c(IID, PRS))
+
+
