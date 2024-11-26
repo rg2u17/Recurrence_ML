@@ -1,0 +1,693 @@
+####################################
+### 1. Construct cohort in UKB #####
+
+# This script presumes access to csv files with the following data:
+
+# Fluid intake
+fluid1 <- c(participant_id,
+            age_at_recruitment,
+            townsend_deprivation_index_at_recruitment,
+            water_intake_instance_0,
+            drinking_water_intake_instance_0,
+            low_calorie_drink_intake_instance_0,
+            fizzy_drink_intake_instance_0,
+            fizzy_drink_intake_instance_1,
+            squash_intake_instance_0,
+            orange_juice_intake_instance_0,
+            grapefruit_juice_intake_instance_0,
+            pure_fruit_vegetable_juice_intake_instance_0,
+            fruit_smoothie_intake_instance_0,
+            dairy_smoothie_intake_instance_0,
+            coffee_consumed_instance_0,
+            instant_coffee_intake_instance_0,
+            filtered_coffee_intake_instance_0,
+            cappuccino_intake_instance_0,
+            latte_intake_instance_0,
+            espresso_intake_instance_0,
+            other_coffee_type_instance_0,
+            decaffeinated_coffee_instance_0,
+            herbal_tea_intake_instance_0,
+            green_tea_intake_instance_0,
+            meat_consumers_instance_0,
+            type_milk_consumed_instance_4,
+            drinking_water_intake_instance_0,
+            alcohol_drinker_status_instance_0,
+            coffee_consumed_instance_0,
+            standard_tea_intake_instance_0,
+            rooibos_tea_intake_instance_0,
+            other_tea_intake_instance_0,
+            decaffeinated_tea_instance_0,
+            red_wine_intake_instance_0,
+            size_of_red_wine_glass_drunk_instance_0,
+            rose_wine_intake_instance_0,
+            size_of_rose_wine_glass_drunk_instance_0,
+            white_wine_intake_instance_0,
+            size_of_white_wine_glass_drunk_instance_0,
+            beer_cider_intake_instance_0,
+            fortified_wine_intake_instance_0,
+            spirits_intake_instance_0
+)
+
+# Dietary data
+
+diet_data_participant <- c(participant_id,
+                           age_at_recruitment,
+                           townsend_deprivation_index_at_recruitment,
+                           date_n20_first_reported_calculus_of_kidney_and_ureter,
+                           date_n22_first_reported_calculus_of_urinary_tract_in_diseases_classified_elsewhere,
+                           date_n23_first_reported_unspecified_renal_colic,
+                           diagnoses_icd10,
+                           date_of_end_stage_renal_disease_report,
+                           year_of_birth,
+                           month_of_birth,
+                           date_of_first_in_patient_diagnosis_icd10_array_0,
+                           date_of_first_in_patient_diagnosis_icd10_array_1,
+                           sex,
+                           blood_pressure_device_id_instance_0,
+                           blood_pressure_manual_sphygmomanometer_device_id_instance_0,
+                           diastolic_blood_pressure_automated_reading_instance_0_array_0,
+                           diastolic_blood_pressure_manual_reading_instance_0_array_0,
+                           systolic_blood_pressure_automated_reading_instance_0_array_0,
+                           systolic_blood_pressure_manual_reading_instance_0_array_0,
+                           above_moderate_vigorous_recommendation_instance_0,
+                           above_moderate_vigorous_walking_recommendation_instance_0,
+                           met_minutes_per_week_for_moderate_activity_instance_0,
+                           met_minutes_per_week_for_vigorous_activity_instance_0,
+                           met_minutes_per_week_for_walking_instance_0,
+                           summed_met_minutes_per_week_for_all_activity_instance_0,
+                           summed_days_activity_instance_0,
+                           summed_minutes_activity_instance_0,
+                           cooked_vegetable_intake_instance_0,
+                           salad_raw_vegetable_intake_instance_0,
+                           fresh_fruit_intake_instance_0,
+                           dried_fruit_intake_instance_0,
+                           oily_fish_intake_instance_0,
+                           non_oily_fish_intake_instance_0,
+                           processed_meat_intake_instance_0,
+                           poultry_intake_instance_0,
+                           beef_intake_instance_0,
+                           lamb_mutton_intake_instance_0,
+                           pork_intake_instance_0,
+                           age_when_last_ate_meat_instance_0,
+                           never_eat_eggs_dairy_wheat_sugar_instance_0,
+                           cheese_intake_instance_0,
+                           milk_type_used_instance_0,
+                           spread_type_instance_0,
+                           non_butter_spread_type_details_instance_0,
+                           bread_intake_instance_0,
+                           bread_type_instance_0,
+                           cereal_intake_instance_0,
+                           cereal_type_instance_0,
+                           salt_added_to_food_instance_0,
+                           tea_intake_instance_0,
+                           coffee_intake_instance_0,
+                           water_intake_instance_0,
+                           major_dietary_changes_in_the_last_5_years_instance_0,
+                           variation_in_diet_instance_0
+)
+
+####################################
+### 2. Load R packages #############
+
+library(tidyverse)
+library(janitor)
+
+###################################
+### 3. Define fluid dataset #######
+
+fluid1 <- fluid1 %>% subset(select = -c(drinking_water_intake_instance_0,
+                                      water_intake_instance_0,
+                                      coffee_consumed_instance_0))
+fluid2 <- merge(fluid1,
+                fluid_extra,
+                by.x = "participant_id",
+                by.y = "participant_id",
+                all.x = TRUE)
+fluid <- fluid2
+
+fluid$water_intake_instance_0 <- as.factor(fluid$water_intake_instance_0)
+fluid$water_intake_instance_0 <-
+  recode_factor(fluid$water_intake_instance_0,
+                "Less than one" = "0.5",
+                "Do not know" = "NA",
+                "Prefer not to answer" = "NA")
+fluid$water_intake_instance_0 <- ifelse(fluid$water_intake_instance_0 == "NA",
+                                        NA,
+                                        fluid$water_intake_instance_0)
+fluid$water_intake_instance_0 <- as.numeric(fluid$water_intake_instance_0)
+
+fluid$drinking_water_intake_instance_0 <- as.factor(fluid$drinking_water_intake_instance_0)
+fluid$drinking_water_intake_instance_0 <- recode_factor(fluid$drinking_water_intake_instance_0,
+                                                           "1" = "1",
+                                                           "2" = "2",
+                                                           "3" = "3",
+                                                           "4" = "4",
+                                                           "5" = "5",
+                                                           "6+" = "6",
+                                                           "half" = "0.5")
+fluid$drinking_water_intake_instance_0 <- as.numeric(fluid$drinking_water_intake_instance_0)
+
+fluid$low_calorie_drink_intake_instance_0 <- as.factor(fluid$low_calorie_drink_intake_instance_0)
+fluid$low_calorie_drink_intake_instance_0 <- recode_factor(fluid$low_calorie_drink_intake_instance_0,
+                                                           "1" = "1",
+                                                           "2" = "2",
+                                                           "3" = "3",
+                                                           "4" = "4",
+                                                           "5" = "5",
+                                                           "6+" = "6",
+                                                           "half" = "0.5")
+fluid$low_calorie_drink_intake_instance_0 <- as.numeric(fluid$low_calorie_drink_intake_instance_0)
+
+
+fluid$fizzy_drink_intake_instance_0 <- as.factor(fluid$fizzy_drink_intake_instance_0)
+fluid$fizzy_drink_intake_instance_0 <- recode_factor(fluid$fizzy_drink_intake_instance_0,
+                                                     "1" = "1",
+                                                     "2" = "2",
+                                                     "3" = "3",
+                                                     "4" = "4",
+                                                     "5" = "5",
+                                                     "6+" = "6",
+                                                     "half" = "0.5")
+fluid$fizzy_drink_intake_instance_0 <- as.numeric(fluid$fizzy_drink_intake_instance_0)
+
+
+fluid$squash_intake_instance_0 <- as.factor(fluid$squash_intake_instance_0)
+fluid$squash_intake_instance_0 <- recode_factor(fluid$squash_intake_instance_0,
+                                                "1" = "1",
+                                                "2" = "2",
+                                                "3" = "3",
+                                                "4" = "4",
+                                                "5" = "5",
+                                                "6+" = "6",
+                                                "half" = "0.5")
+fluid$squash_intake_instance_0 <- as.numeric(fluid$squash_intake_instance_0)
+
+
+fluid$orange_juice_intake_instance_0 <- as.factor(fluid$orange_juice_intake_instance_0)
+fluid$orange_juice_intake_instance_0 <- recode_factor(fluid$orange_juice_intake_instance_0,
+                                                      "1" = "1",
+                                                      "2" = "2",
+                                                      "3" = "3",
+                                                      "4" = "4",
+                                                      "5" = "5",
+                                                      "6+" = "6",
+                                                      "half" = "0.5")
+fluid$orange_juice_intake_instance_0 <- as.numeric(fluid$orange_juice_intake_instance_0)
+
+
+fluid$grapefruit_juice_intake_instance_0 <- as.factor(fluid$grapefruit_juice_intake_instance_0)
+fluid$grapefruit_juice_intake_instance_0 <- recode_factor(fluid$grapefruit_juice_intake_instance_0,
+                                                          "1" = "1",
+                                                          "2" = "2",
+                                                          "3" = "3",
+                                                          "4" = "4",
+                                                          "5" = "5",
+                                                          "6+" = "6",
+                                                          "half" = "0.5")
+fluid$grapefruit_juice_intake_instance_0 <- as.numeric(fluid$grapefruit_juice_intake_instance_0)
+
+
+fluid$pure_fruit_vegetable_juice_intake_instance_0 <- as.factor(fluid$pure_fruit_vegetable_juice_intake_instance_0)
+fluid$pure_fruit_vegetable_juice_intake_instance_0 <- recode_factor(fluid$pure_fruit_vegetable_juice_intake_instance_0,
+                                                                    "1" = "1",
+                                                                    "2" = "2",
+                                                                    "3" = "3",
+                                                                    "4" = "4",
+                                                                    "5" = "5",
+                                                                    "6+" = "6",
+                                                                    "half" = "0.5")
+fluid$pure_fruit_vegetable_juice_intake_instance_0 <- as.numeric(fluid$pure_fruit_vegetable_juice_intake_instance_0)
+
+
+
+fluid$coffee_consumed_instance_0 <- as.factor(fluid$coffee_consumed_instance_0)
+
+fluid$instant_coffee_intake_instance_0 <- as.factor(fluid$instant_coffee_intake_instance_0)
+fluid$instant_coffee_intake_instance_0 <- recode_factor(fluid$instant_coffee_intake_instance_0,
+                                                        "1" = "1",
+                                                        "2" = "2",
+                                                        "3" = "3",
+                                                        "4" = "4",
+                                                        "5" = "5",
+                                                        "6+" = "6",
+                                                        "half" = "0.5")
+fluid$instant_coffee_intake_instance_0 <- as.numeric(fluid$instant_coffee_intake_instance_0)
+
+
+fluid$filtered_coffee_intake_instance_0 <- as.factor(fluid$filtered_coffee_intake_instance_0)
+fluid$filtered_coffee_intake_instance_0 <- recode_factor(fluid$filtered_coffee_intake_instance_0,
+                                                         "1" = "1",
+                                                         "2" = "2",
+                                                         "3" = "3",
+                                                         "4" = "4",
+                                                         "5" = "5",
+                                                         "6+" = "6",
+                                                         "half" = "0.5")
+fluid$filtered_coffee_intake_instance_0 <- as.numeric(fluid$filtered_coffee_intake_instance_0)
+
+
+fluid$cappuccino_intake_instance_0 <- as.factor(fluid$cappuccino_intake_instance_0)
+fluid$cappuccino_intake_instance_0 <- recode_factor(fluid$cappuccino_intake_instance_0,
+                                                    "1" = "1",
+                                                    "2" = "2",
+                                                    "3" = "3",
+                                                    "4" = "4",
+                                                    "5" = "5",
+                                                    "6+" = "6",
+                                                    "half" = "0.5")
+fluid$cappuccino_intake_instance_0 <- as.numeric(fluid$cappuccino_intake_instance_0)
+
+
+fluid$latte_intake_instance_0 <- as.factor(fluid$latte_intake_instance_0)
+fluid$latte_intake_instance_0 <- recode_factor(fluid$latte_intake_instance_0,
+                                               "1" = "1",
+                                               "2" = "2",
+                                               "3" = "3",
+                                               "4" = "4",
+                                               "5" = "5",
+                                               "6+" = "6",
+                                               "half" = "0.5")
+fluid$latte_intake_instance_0 <- as.numeric(fluid$latte_intake_instance_0)
+
+
+fluid$espresso_intake_instance_0 <- as.factor(fluid$espresso_intake_instance_0)
+fluid$espresso_intake_instance_0 <- recode_factor(fluid$espresso_intake_instance_0,
+                                                  "1" = "1",
+                                                  "2" = "2",
+                                                  "3" = "3",
+                                                  "4" = "4",
+                                                  "5" = "5",
+                                                  "6+" = "6",
+                                                  "half" = "0.5")
+fluid$espresso_intake_instance_0 <- as.numeric(fluid$espresso_intake_instance_0)
+
+
+fluid$other_coffee_type_instance_0
+
+fluid$other_coffee_type_instance_0 <- as.factor(fluid$other_coffee_type_instance_0)
+fluid$other_coffee_type_instance_0 <- recode_factor(fluid$other_coffee_type_instance_0,
+                                                    "1" = "1",
+                                                    "2" = "2",
+                                                    "3" = "3",
+                                                    "4" = "4",
+                                                    "5" = "5",
+                                                    "6+" = "6",
+                                                    "half" = "0.5")
+fluid$other_coffee_type_instance_0 <- as.numeric(fluid$other_coffee_type_instance_0)
+
+
+fluid$herbal_tea_intake_instance_0 <- as.factor(fluid$herbal_tea_intake_instance_0)
+fluid$herbal_tea_intake_instance_0 <- recode_factor(fluid$herbal_tea_intake_instance_0,
+                                                    "1" = "1",
+                                                    "2" = "2",
+                                                    "3" = "3",
+                                                    "4" = "4",
+                                                    "5" = "5",
+                                                    "6+" = "6",
+                                                    "half" = "0.5")
+fluid$herbal_tea_intake_instance_0 <- as.numeric(fluid$herbal_tea_intake_instance_0)
+
+
+fluid$green_tea_intake_instance_0 <- as.factor(fluid$green_tea_intake_instance_0)
+fluid$green_tea_intake_instance_0 <- recode_factor(fluid$green_tea_intake_instance_0,
+                                                   "1" = "1",
+                                                   "2" = "2",
+                                                   "3" = "3",
+                                                   "4" = "4",
+                                                   "5" = "5",
+                                                   "6+" = "6",
+                                                   "half" = "0.5")
+fluid$green_tea_intake_instance_0 <- as.numeric(fluid$green_tea_intake_instance_0)
+
+
+fluid$dairy_smoothie_intake_instance_0 <- as.factor(fluid$dairy_smoothie_intake_instance_0)
+fluid$dairy_smoothie_intake_instance_0 <- recode_factor(fluid$dairy_smoothie_intake_instance_0,
+                                                        "1" = "1",
+                                                        "2" = "2",
+                                                        "3" = "3",
+                                                        "4" = "4",
+                                                        "5" = "5",
+                                                        "6+" = "6",
+                                                        "half" = "0.5")
+fluid$dairy_smoothie_intake_instance_0 <- as.numeric(fluid$dairy_smoothie_intake_instance_0)
+
+
+fluid$fruit_smoothie_intake_instance_0 <- as.factor(fluid$fruit_smoothie_intake_instance_0)
+fluid$fruit_smoothie_intake_instance_0 <- recode_factor(fluid$fruit_smoothie_intake_instance_0,
+                                                        "1" = "1",
+                                                        "2" = "2",
+                                                        "3" = "3",
+                                                        "4" = "4",
+                                                        "5" = "5",
+                                                        "6+" = "6",
+                                                        "half" = "0.5")
+fluid$fruit_smoothie_intake_instance_0 <- as.numeric(fluid$fruit_smoothie_intake_instance_0)
+
+
+fluid$meat_consumers_instance_0 <- as.factor(fluid$meat_consumers_instance_0)
+
+fluid$alcohol_drinker_status_instance_0 <- as.factor(fluid$alcohol_drinker_status_instance_0)
+fluid$standard_tea_intake_instance_0 <- as.factor(fluid$standard_tea_intake_instance_0)
+fluid$standard_tea_intake_instance_0 <- recode_factor(fluid$standard_tea_intake_instance_0,
+                                                        "1" = "1",
+                                                        "2" = "2",
+                                                        "3" = "3",
+                                                        "4" = "4",
+                                                        "5" = "5",
+                                                        "6+" = "6",
+                                                        "half" = "0.5")
+fluid$standard_tea_intake_instance_0 <- as.numeric(fluid$standard_tea_intake_instance_0)
+
+
+fluid$rooibos_tea_intake_instance_0 <- as.factor(fluid$rooibos_tea_intake_instance_0)
+fluid$rooibos_tea_intake_instance_0 <- recode_factor(fluid$rooibos_tea_intake_instance_0,
+                                                      "1" = "1",
+                                                      "2" = "2",
+                                                      "3" = "3",
+                                                      "4" = "4",
+                                                      "5" = "5",
+                                                      "6+" = "6",
+                                                      "half" = "0.5")
+fluid$rooibos_tea_intake_instance_0 <- as.numeric(fluid$rooibos_tea_intake_instance_0)
+
+
+fluid$other_tea_intake_instance_0 <- as.factor(fluid$other_tea_intake_instance_0)
+fluid$other_tea_intake_instance_0 <- recode_factor(fluid$other_tea_intake_instance_0,
+                                                     "1" = "1",
+                                                     "2" = "2",
+                                                     "3" = "3",
+                                                     "4" = "4",
+                                                     "5" = "5",
+                                                     "6+" = "6",
+                                                     "half" = "0.5")
+fluid$other_tea_intake_instance_0 <- as.numeric(fluid$other_tea_intake_instance_0)
+
+
+fluid$size_of_red_wine_glass_drunk_instance_0 <- as.factor(fluid$size_of_red_wine_glass_drunk_instance_0)
+fluid$size_of_red_wine_glass_drunk_instance_0 <- recode_factor(fluid$size_of_red_wine_glass_drunk_instance_0,
+                                                   "large (250ml)" = "250",
+                                                   "small (125ml)" = "125",
+                                                   "medium (175ml) " = "175",
+                                                   "medium (175ml)|large (250ml)" = "212.5",
+                                                   "small (125ml)|large (250ml)" = "175",
+                                                   "small (125ml)|medium (175ml)" = "150")
+fluid$size_of_red_wine_glass_drunk_instance_0 <- as.numeric(fluid$size_of_red_wine_glass_drunk_instance_0)
+
+
+fluid$size_of_rose_wine_glass_drunk_instance_0 <- as.factor(fluid$size_of_rose_wine_glass_drunk_instance_0)
+fluid$size_of_rose_wine_glass_drunk_instance_0 <- recode_factor(fluid$size_of_rose_wine_glass_drunk_instance_0,
+                                                               "large (250ml)" = "250",
+                                                               "small (125ml)" = "125",
+                                                               "medium (175ml) " = "175",
+                                                               "medium (175ml)|large (250ml)" = "212.5",
+                                                               "small (125ml)|large (250ml)" = "175",
+                                                               "small (125ml)|medium (175ml)" = "150")
+fluid$size_of_rose_wine_glass_drunk_instance_0 <- as.numeric(fluid$size_of_rose_wine_glass_drunk_instance_0)
+
+
+fluid$size_of_white_wine_glass_drunk_instance_0 <- as.factor(fluid$size_of_white_wine_glass_drunk_instance_0)
+fluid$size_of_white_wine_glass_drunk_instance_0 <- recode_factor(fluid$size_of_white_wine_glass_drunk_instance_0,
+                                                                "large (250ml)" = "250",
+                                                                "small (125ml)" = "125",
+                                                                "medium (175ml) " = "175",
+                                                                "medium (175ml)|large (250ml)" = "212.5",
+                                                                "small (125ml)|large (250ml)" = "175",
+                                                                "small (125ml)|medium (175ml)" = "150")
+fluid$size_of_white_wine_glass_drunk_instance_0 <- as.numeric(fluid$size_of_white_wine_glass_drunk_instance_0)
+
+
+fluid$red_wine_intake_instance_0 <- as.factor(fluid$red_wine_intake_instance_0)
+fluid$red_wine_intake_instance_0 <- recode_factor(fluid$red_wine_intake_instance_0,
+                                                   "1" = "1",
+                                                   "2" = "2",
+                                                   "3" = "3",
+                                                   "4" = "4",
+                                                   "5" = "5",
+                                                   "6+" = "6",
+                                                   "half" = "0.5")
+fluid$red_wine_intake_instance_0 <- as.numeric(fluid$red_wine_intake_instance_0)
+
+
+fluid$rose_wine_intake_instance_0 <- as.factor(fluid$rose_wine_intake_instance_0)
+fluid$rose_wine_intake_instance_0 <- recode_factor(fluid$rose_wine_intake_instance_0,
+                                                  "1" = "1",
+                                                  "2" = "2",
+                                                  "3" = "3",
+                                                  "4" = "4",
+                                                  "5" = "5",
+                                                  "6+" = "6",
+                                                  "half" = "0.5")
+fluid$rose_wine_intake_instance_0 <- as.numeric(fluid$rose_wine_intake_instance_0)
+
+
+fluid$white_wine_intake_instance_0 <- as.factor(fluid$white_wine_intake_instance_0)
+fluid$white_wine_intake_instance_0 <- recode_factor(fluid$white_wine_intake_instance_0,
+                                                   "1" = "1",
+                                                   "2" = "2",
+                                                   "3" = "3",
+                                                   "4" = "4",
+                                                   "5" = "5",
+                                                   "6+" = "6",
+                                                   "half" = "0.5")
+fluid$white_wine_intake_instance_0 <- as.numeric(fluid$white_wine_intake_instance_0)
+
+
+fluid$beer_cider_intake_instance_0 <- as.factor(fluid$beer_cider_intake_instance_0)
+fluid$beer_cider_intake_instance_0 <- recode_factor(fluid$beer_cider_intake_instance_0,
+                                                    "1" = "1",
+                                                    "2" = "2",
+                                                    "3" = "3",
+                                                    "4" = "4",
+                                                    "5" = "5",
+                                                    "6+" = "6",
+                                                    "half" = "0.5")
+fluid$beer_cider_intake_instance_0 <- as.numeric(fluid$beer_cider_intake_instance_0)
+
+
+fluid$fortified_wine_intake_instance_0 <- as.factor(fluid$fortified_wine_intake_instance_0)
+fluid$fortified_wine_intake_instance_0 <- recode_factor(fluid$fortified_wine_intake_instance_0,
+                                                    "1" = "1",
+                                                    "2" = "2",
+                                                    "3" = "3",
+                                                    "4" = "4",
+                                                    "5" = "5",
+                                                    "6+" = "6",
+                                                    "half" = "0.5")
+fluid$fortified_wine_intake_instance_0 <- as.numeric(fluid$fortified_wine_intake_instance_0)
+
+
+fluid$spirits_intake_instance_0 <- as.factor(fluid$spirits_intake_instance_0)
+fluid$spirits_intake_instance_0 <- recode_factor(fluid$spirits_intake_instance_0,
+                                                        "1" = "1",
+                                                        "2" = "2",
+                                                        "3" = "3",
+                                                        "4" = "4",
+                                                        "5" = "5",
+                                                        "6+" = "6",
+                                                        "half" = "0.5")
+fluid$spirits_intake_instance_0 <- as.numeric(fluid$spirits_intake_instance_0)
+
+
+
+fluid <-
+  fluid %>% mutate(
+    water_intake_vol = ifelse(
+      !is.na(water_intake_instance_0),
+      water_intake_instance_0 * 250,
+      0
+    ),
+    water_intake_2_vol = ifelse(
+      !is.na(drinking_water_intake_instance_0),
+      drinking_water_intake_instance_0 * 250,
+      0
+    ),
+    instant_coffee_intake_vol = ifelse(
+      !is.na(instant_coffee_intake_instance_0),
+      instant_coffee_intake_instance_0 * 190,
+      0
+    ),
+    filtered_coffee_intake_vol = ifelse(
+      !is.na(filtered_coffee_intake_instance_0),
+      filtered_coffee_intake_instance_0 * 190,
+      0
+    ),
+    cappuccino_intake_vol = ifelse(
+      !is.na(cappuccino_intake_instance_0),
+      cappuccino_intake_instance_0 * 190,
+      0
+    ),
+    latte_intake_vol = ifelse(
+      !is.na(latte_intake_instance_0),
+      latte_intake_instance_0 * 190,
+      0
+    ),
+    espresso_intake_vol = ifelse(
+      !is.na(espresso_intake_instance_0),
+      espresso_intake_instance_0 * 30,
+      0
+    ),
+    other_coffee_vol = ifelse(
+      !is.na(other_coffee_type_instance_0),
+      other_coffee_type_instance_0 * 190,
+      0
+    ),
+    standard_tea_intake_vol = ifelse(
+      !is.na(standard_tea_intake_instance_0),
+      standard_tea_intake_instance_0 * 190,
+      0
+    ),
+    rooibos_tea_intake_vol = ifelse(
+      !is.na(rooibos_tea_intake_instance_0),
+      rooibos_tea_intake_instance_0 * 190,
+      0
+    ),
+    herbal_tea_intake_vol = ifelse(!is.na(herbal_tea_intake_instance_0),
+      herbal_tea_intake_instance_0 * 190,
+      0),
+    green_tea_intake_vol = ifelse(!is.na(green_tea_intake_instance_0),
+      green_tea_intake_instance_0 * 190,
+      0),
+    other_tea_intake_vol = ifelse(!is.na(other_tea_intake_instance_0),
+                                  other_tea_intake_instance_0 * 190,
+                                  0),
+    red_wine_intake_vol = ifelse(!is.na(red_wine_intake_instance_0),
+                                 red_wine_intake_instance_0 * size_of_red_wine_glass_drunk_instance_0,
+                                 0),
+    white_wine_intake_vol = ifelse(!is.na(white_wine_intake_instance_0),
+                                   white_wine_intake_instance_0 * size_of_white_wine_glass_drunk_instance_0,
+                                   0),
+    rose_wine_intake_vol = ifelse(!is.na(rose_wine_intake_instance_0),
+                                  rose_wine_intake_instance_0 * size_of_rose_wine_glass_drunk_instance_0,
+                                  0),
+    fortified_wine_intake_vol = ifelse(!is.na(fortified_wine_intake_instance_0),
+                                       fortified_wine_intake_instance_0 * 50,
+                                       0),
+    beer_cider_intake_vol = ifelse(!is.na(beer_cider_intake_instance_0),
+    beer_cider_intake_instance_0 * 568,
+    0),
+    spirits_intake_vol = ifelse(!is.na(spirits_intake_instance_0),
+                                spirits_intake_instance_0 * 23,
+                                0)
+  )
+
+fluid <- fluid %>%
+  mutate(
+    fluid_intake = water_intake_vol + water_intake_2_vol + instant_coffee_intake_vol + filtered_coffee_intake_vol + cappuccino_intake_vol + latte_intake_vol + espresso_intake_vol + other_coffee_vol + standard_tea_intake_vol + rooibos_tea_intake_vol + herbal_tea_intake_vol + green_tea_intake_vol + other_tea_intake_vol + red_wine_intake_vol + white_wine_intake_vol + rose_wine_intake_vol + fortified_wine_intake_vol + beer_cider_intake_vol + spirits_intake_vol,
+    .keep = "all"
+  )
+
+fluid$fluid_intake <- as.numeric(fluid$fluid_intake)
+
+fluid <- subset(fluid,
+                select = c(participant_id,
+                           fluid_intake,
+                           townsend_deprivation_index_at_recruitment, 
+                           meat_consumers_instance_0
+                ))
+
+
+###################################
+### 4. Define diet dataset ########
+
+diet <- diet_data_participant %>% subset(select = -c(age_at_recruitment,
+                                                     date_n20_first_reported_calculus_of_kidney_and_ureter,
+                                                     date_n22_first_reported_calculus_of_urinary_tract_in_diseases_classified_elsewhere,
+                                                     date_n23_first_reported_unspecified_renal_colic,
+                                                     diagnoses_icd10,
+                                                     date_of_first_in_patient_diagnosis_icd10_array_0,
+                                                     date_of_first_in_patient_diagnosis_icd10_array_1,
+                                                     sex,
+                                                     blood_pressure_device_id_instance_0,
+                                                     never_eat_eggs_dairy_wheat_sugar_instance_0,
+                                                     met_minutes_per_week_for_moderate_activity_instance_0,
+                                                     met_minutes_per_week_for_vigorous_activity_instance_0,
+                                                     summed_minutes_activity_instance_0,
+                                                     blood_pressure_manual_sphygmomanometer_device_id_instance_0,
+                                                     above_moderate_vigorous_recommendation_instance_0,
+                                                     above_moderate_vigorous_walking_recommendation_instance_0,
+                                                     townsend_deprivation_index_at_recruitment,
+                                                     water_intake_instance_0,
+                                                     major_dietary_changes_in_the_last_5_years_instance_0
+                                                     )) %>% as_tibble()
+
+diet$year_of_birth <- as.character(diet$year_of_birth)
+diet$month_of_birth <- as.character(diet$month_of_birth)
+
+diet <- diet %>% mutate(
+  dob = paste("1", month_of_birth, year_of_birth, sep = " - "),
+  diastolic_bp = if_else(
+    !is.na(
+      diastolic_blood_pressure_automated_reading_instance_0_array_0
+    ),
+    diastolic_blood_pressure_automated_reading_instance_0_array_0,
+    if_else(
+      !is.na(diastolic_blood_pressure_manual_reading_instance_0_array_0),
+      diastolic_blood_pressure_manual_reading_instance_0_array_0,
+      NA_real_
+    )
+  ),
+  systolic_bp = if_else(
+    !is.na(
+      systolic_blood_pressure_automated_reading_instance_0_array_0
+    ),
+    systolic_blood_pressure_automated_reading_instance_0_array_0,
+    if_else(
+      !is.na(systolic_blood_pressure_manual_reading_instance_0_array_0),
+      systolic_blood_pressure_manual_reading_instance_0_array_0,
+      NA_real_
+    )
+  ),
+  meat_eater = ifelse(
+    !is.na(age_when_last_ate_meat_instance_0) &
+      (
+        processed_meat_intake_instance_0 + poultry_intake_instance_0 + beef_intake_instance_0 + lamb_mutton_intake_instance_0 + pork_intake_instance_0
+      ) == 0,
+    "no",
+    "yes"
+  ),
+  CKD = ifelse(!is.na(date_of_end_stage_renal_disease_report),
+               "yes",
+               "no"),
+  .keep = "unused"
+)
+
+diet$dob <- as.Date(diet$dob,
+                    format = "%d - %m - %Y")
+diet$meat_eater <- factor(diet$meat_eater,
+                          levels = c("yes",
+                                     "no"))
+diet$CKD <- factor(diet$CKD,
+                          levels = c("yes",
+                                     "no"))
+
+# Identify all meat eaters from the diet dataset
+meat_eaters_diet <- subset(diet, meat_eater == "yes")$participant_id
+
+# Check which meat eaters from the diet dataset are not represented in the fluid dataset
+not_represented_in_fluid <- !meat_eaters_diet %in% fluid$participant_id
+
+# Count the number of meat eaters not represented in the fluid dataset
+num_not_represented_in_fluid <- sum(not_represented_in_fluid)
+
+# Print the number of meat eaters not represented in the fluid dataset
+print(paste("Number of meat eaters not represented in the fluid dataset:", num_not_represented_in_fluid))
+
+# Repeat the process to check how many meat eaters from the fluid dataset are not represented in the diet dataset
+meat_eaters_fluid <- subset(fluid, meat_consumers_instance_0 == "1")$participant_id
+
+not_represented_in_diet <- !meat_eaters_fluid %in% diet$participant_id
+
+num_not_represented_in_diet <- sum(not_represented_in_diet)
+
+print(paste("Number of meat eaters not represented in the diet dataset:", num_not_represented_in_diet))
+
+###################################
+### 5. Merge fluid and diet #######
+
+diet <- merge(diet,
+              fluid,
+              by.x = "participant_id",
+              by.y = "participant_id",
+              all.y = F)
+
+diet <- diet %>% subset(select = -meat_consumers_instance_0)
