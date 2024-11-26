@@ -1,0 +1,46 @@
+##################################
+### 1. Data ######################
+
+# This script presumes you have run scripts 1-5
+
+##################################
+### 2. Load R packages ###########
+
+library(tidyverse)
+
+##################################
+### 3. Merge datasets ###########
+
+#add phenotype - 5 year recurrence data - can change this if necessary
+demographics01 <- overall_data_cut_off_5 %>% mutate(time_0 = first_date,
+                                                    pheno = ifelse(count_diff >0,
+                                                                   "rsf",
+                                                                   "ssf")) %>% subset(select = c(participant_id, pheno, time_0)) %>%
+  left_join(demographics, by = c("participant_id" = "participant_id"))
+
+#add diet data
+demographics1 <- demographics01 %>%
+  left_join(diet, by = c("participant_id" = "participant_id"))
+
+#add PRS
+demographics2 <- demographics1 %>%
+  left_join(prs, by = c("participant_id" = "IID"))
+
+# add rare variants 
+demographics3 <- demographics2 %>%
+  left_join(genotypes_clean, by = c("participant_id" = "IID"))
+
+# add PMHx
+demographics4 <- demographics3 %>%
+  left_join(pmhx_cleaned, by = c("participant_id" = "participant_id"))
+
+demographics4 <- demographics4 %>% distinct(participant_id,
+                                          .keep_all = TRUE)
+
+demographics7 <-  demographics4 %>% mutate(recurrence = pheno,
+                                         .keep = "unused") %>% drop_na(recurrence) 
+
+demographics_colic_to_colic <- demographics7
+
+# Examine final recurrence rates
+table(demographics_colic_to_colic$recurrence)
