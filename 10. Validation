@@ -1,0 +1,414 @@
+########################################
+### 1. Data ############################
+
+# This script assumes scripts 1-9 have been run
+
+########################################
+### 2. Load R packages #################
+
+library(tidyverse)
+library(pROC)
+library(MLeval)
+library(gt)
+library(gtExtras)
+library(parameters)
+library(grid)
+library(gridExtra)
+
+########################################
+### 3. Demographics only ###############
+
+demographics_only_outcome <-
+  ifelse(demographics_only_test$recurrence == "rsf",
+         "1",
+         "0") %>% as.factor()
+
+demographics_only_xgboost_predict <-
+  predict(demographic_only_model,
+          demographics_only_test,
+          type = "prob")
+demographics_only_xgboost_predict2 <-
+  predict(demographic_only_model,
+          demographics_only_test,
+          type = "raw") 
+
+demographics_only_xgboost_tb <-
+  table(
+    pred = factor(demographics_only_xgboost_predict2, levels = c("rsf", "ssf")),
+    ref = demographics_only_test$recurrence
+  )
+print(confusionMatrix(demographics_only_xgboost_tb))
+res_demographics_only_xgboost <-
+  evalm(demographic_only_model)
+demographics_only_xgboost_roc <-
+  roc(
+    demographics_only_outcome,
+    demographics_only_xgboost_predict$rsf)
+demographics_only_auc<-auc(demographics_only_xgboost_roc)
+print(demographics_only_auc)
+print(ci.auc(demographics_only_xgboost_roc))
+varImp(demographic_only_model)
+hist(demographics_only_xgboost_predict$rsf,
+     bins = 100)
+
+########################################
+### 4. Fluid only ######################
+
+fluid_only_outcome <-
+  ifelse(fluid_only_test$recurrence == "rsf",
+         "1",
+         "0") %>% as.factor()
+
+fluid_only_xgboost_predict <-
+  predict(fluid_only_model,
+          fluid_only_test,
+          type = "prob")
+fluid_only_xgboost_predict2 <-
+  predict(fluid_only_model,
+          fluid_only_test,
+          type = "raw") 
+
+fluid_only_xgboost_tb <-
+  table(
+    pred = factor(fluid_only_xgboost_predict2, levels = c("rsf", "ssf")),
+    ref = fluid_only_test$recurrence
+  )
+print(confusionMatrix(fluid_only_xgboost_tb))
+res_fluid_only_xgboost <-
+  evalm(fluid_only_model)
+fluid_only_xgboost_roc <-
+  roc(
+    fluid_only_outcome,
+    fluid_only_xgboost_predict$rsf)
+fluid_only_auc<-auc(fluid_only_xgboost_roc)
+print(fluid_only_auc)
+print(ci.auc(fluid_only_xgboost_roc))
+varImp(demographic_only_model)
+hist(fluid_only_xgboost_predict$rsf,
+     bins = 100)
+
+
+########################################
+### 5. Diet only #######################
+
+diet_only_outcome <-
+  ifelse(diet_only_test$recurrence == "rsf",
+         "1",
+         "0") %>% as.factor()
+
+diet_only_xgboost_predict <-
+  predict(diet_only_model,
+          diet_only_test,
+          type = "prob")
+diet_only_xgboost_predict2 <-
+  predict(diet_only_model,
+          diet_only_test,
+          type = "raw") 
+
+diet_only_xgboost_tb <-
+  table(
+    pred = factor(diet_only_xgboost_predict2, levels = c("rsf", "ssf")),
+    ref = diet_only_test$recurrence
+  )
+print(confusionMatrix(diet_only_xgboost_tb))
+res_diet_only_xgboost <-
+  evalm(diet_only_model)
+diet_only_xgboost_roc <-
+  roc(
+    diet_only_outcome,
+    diet_only_xgboost_predict$rsf)
+diet_only_auc<-auc(diet_only_xgboost_roc)
+print(diet_only_auc)
+print(ci.auc(diet_only_xgboost_roc))
+varImp(demographic_only_model)
+hist(diet_only_xgboost_predict$rsf,
+     bins = 100)
+
+
+########################################
+### 6. Genetics only ################### 
+
+genetics_outcome <-
+  ifelse(genetics_test$recurrence == "rsf",
+         "1",
+         "0") %>% as.factor()
+
+genetics_xgboost_predict <-
+  predict(genetics_only_model,
+          genetics_test,
+          type = "prob")
+genetics_xgboost_predict2 <-
+  predict(genetics_only_model,
+          genetics_test,
+          type = "raw") 
+
+genetics_xgboost_tb <-
+  table(
+    pred = factor(genetics_xgboost_predict2, levels = c("rsf", "ssf")),
+    ref = genetics_test$recurrence
+  )
+print(confusionMatrix(genetics_xgboost_tb))
+res_genetics_xgboost <-
+  evalm(genetics_only_model)
+genetics_xgboost_roc <-
+  roc(
+    genetics_outcome,
+    genetics_xgboost_predict$rsf)
+genetics_auc<-auc(genetics_xgboost_roc)
+print(genetics_auc)
+print(ci.auc(genetics_xgboost_roc))
+varImp(genetics_only_model)
+hist(genetics_xgboost_predict$rsf,
+     bins = 100)
+
+########################################
+### 7. Demographics + Serum Biochem only
+
+demographics_serum_outcome <-
+  ifelse(demographics_serum_test$recurrence == "rsf",
+         "1",
+         "0") %>% as.factor()
+
+demographics_serum_xgboost_predict <-
+  predict(demographics_serum_model,
+          demographics_serum_test,
+          type = "prob")
+demographics_serum_xgboost_predict2 <-
+  predict(demographics_serum_model,
+          demographics_serum_test,
+          type = "raw") 
+
+demographics_serum_xgboost_tb <-
+  table(
+    pred = factor(demographics_serum_xgboost_predict2, levels = c("rsf", "ssf")),
+    ref = demographics_serum_test$recurrence
+  )
+print(confusionMatrix(demographics_serum_xgboost_tb))
+res_demographics_serum_xgboost <-
+  evalm(demographics_serum_model)
+demographics_serum_xgboost_roc <-
+  roc(
+    demographics_serum_outcome,
+    demographics_serum_xgboost_predict$rsf)
+demographics_serum_auc<-auc(demographics_serum_xgboost_roc)
+print(demographics_serum_auc)
+print(ci.auc(demographics_serum_xgboost_roc))
+varImp(demographic_only_model)
+hist(demographics_serum_xgboost_predict$rsf,
+     bins = 100)
+
+########################################
+### 8. Demographics + Serum Biochem + Diet
+
+demographics_serum_diet_outcome <-
+  ifelse(demographics_serum_diet_test$recurrence == "rsf",
+         "1",
+         "0") %>% as.factor()
+
+demographics_serum_diet_xgboost_predict <-
+  predict(demographics_serum_diet_fluid_model,
+          demographics_serum_diet_test,
+          type = "prob")
+demographics_serum_diet_xgboost_predict2 <-
+  predict(demographics_serum_diet_fluid_model,
+          demographics_serum_diet_test,
+          type = "raw") 
+
+demographics_serum_diet_xgboost_tb <-
+  table(
+    pred = factor(demographics_serum_diet_xgboost_predict2, levels = c("rsf", "ssf")),
+    ref = demographics_serum_diet_test$recurrence
+  )
+print(confusionMatrix(demographics_serum_diet_xgboost_tb))
+res_demographics_serum_diet_xgboost <-
+  evalm(demographics_serum_diet_fluid_model)
+demographics_serum_diet_xgboost_roc <-
+  roc(
+    demographics_serum_diet_outcome,
+    demographics_serum_diet_xgboost_predict$rsf)
+demographics_serum_diet_auc<-auc(demographics_serum_diet_xgboost_roc)
+print(demographics_serum_diet_auc)
+print(ci.auc(demographics_serum_diet_xgboost_roc))
+varImp(demographic_only_model)
+hist(demographics_serum_diet_xgboost_predict$rsf,
+     bins = 100)
+
+########################################
+### 9. All data - simple model #########
+
+overall_outcome <-
+  ifelse(demographics_test$recurrence == "rsf",
+         "1",
+         "0") %>% as.factor()
+
+overall_xgboost_predict <-
+  predict(overall_model,
+          demographics_test,
+          type = "prob")
+overall_xgboost_predict2 <-
+  predict(overall_model,
+          demographics_test,
+          type = "raw") 
+
+overall_xgboost_tb <-
+  table(
+    pred = factor(overall_xgboost_predict2, levels = c("rsf", "ssf")),
+    ref = demographics_test$recurrence
+  )
+print(confusionMatrix(overall_xgboost_tb))
+res_overall_xgboost <-
+  evalm(overall_model)
+overall_xgboost_roc <-
+  roc(
+    overall_outcome,
+    overall_xgboost_predict$rsf)
+overall_auc<-auc(overall_xgboost_roc)
+print(overall_auc)
+print(ci.auc(overall_xgboost_roc))
+varImp(overall_model)
+hist(overall_xgboost_predict$rsf,
+     bins = 100)
+
+########################################
+### 10. Simple models calibration plots
+
+demographics_cc_plots <- evalm(list(
+    demographic_only_model,
+    fluid_only_model,
+    diet_only_model,
+    genetics_only_model,
+    demographics_serum_model,
+    demographics_serum_fluid_model,
+    demographics_serum_diet_fluid_model,
+    overall_model
+    )
+  )
+  
+demographics_cc_plots$cc
+
+########################################
+### 11. Simple models combined ROC curves
+
+demographics_roc_list <- list(
+  demographics_only_xgboost_roc,
+  fluid_only_xgboost_roc,
+  diet_only_xgboost_roc,
+  genetics_xgboost_roc,
+  demographics_serum_xgboost_roc,
+  demographics_serum_diet_xgboost_roc,
+  overall_xgboost_roc
+)
+demographics_ci_list <-
+  lapply(demographics_roc_list, 
+         ci.se, 
+         specificities = seq(0, 1, l = 25))
+
+dat_demographics_ci_list <- lapply(demographics_ci_list, function(ciobj)
+  data.frame(
+    x = as.numeric(rownames(ciobj)),
+    lower = ciobj[, 1],
+    upper = ciobj[, 3]
+  ))
+
+
+demographics_roc_combined <-
+  ggroc(demographics_roc_list, aes = c("color")) + theme_minimal() + labs(
+    title = "5 Year Recurrence Models",
+    x = "Specificity",
+    y = "Sensitivity",
+    color = "Model"
+  ) + scale_color_discrete(
+    labels = c(
+      "Demographics only",
+      "Fluid intake only",
+      "Diet only",
+      "Genetics only",
+      "Demographics + Biochemistry",
+      "Demographics + Biochemistry + Diet",
+      "Demographics + Biochem + Diet + Genetics"
+    )
+  ) + geom_abline(slope = 1, intercept = 1)
+
+for(i in 1:7) {
+  demographics_roc_combined <- demographics_roc_combined + geom_ribbon(
+    data = dat_demographics_ci_list[[i]],
+    aes(x = x, ymin = lower, ymax = upper),
+    fill = i + 1,
+    alpha = 0.2,
+    inherit.aes = F) 
+} 
+
+demographics_auc_data_overall <-
+  cbind(
+    "Model" = c(
+      "Demographics only",
+      "Fluid intake only",
+      "Diet only",
+      "Genetics only",
+      "Demographics + Biochemistry",
+      "Demographics + Biochemistry + Diet",
+      "Demographics + Biochem + Diet + Genetics"
+    ),
+    "CI" = rbind(
+      ci.auc(demographics_only_xgboost_roc),
+      ci.auc(fluid_only_xgboost_roc),
+      ci.auc(diet_only_xgboost_roc),
+      ci.auc(genetics_xgboost_roc),
+      ci.auc(demographics_serum_xgboost_roc),
+      ci.auc(demographics_serum_diet_xgboost_roc),
+      ci.auc(overall_xgboost_roc)
+    )
+  ) %>% as_tibble()
+colnames(demographics_auc_data_overall) <- c("Model", "LB", "AUC", "UB")
+demographics_auc_data_overall$AUC <- as.numeric(demographics_auc_data_overall$AUC) %>% round(digits = 2)
+demographics_auc_data_overall$LB <- as.numeric(demographics_auc_data_overall$LB) %>% round(digits = 2)
+demographics_auc_data_overall$UB <- as.numeric(demographics_auc_data_overall$UB) %>% round(digits = 2)
+demographics_auc_data_overall <-demographics_auc_data_overall %>% relocate(AUC, .before = LB) 
+
+demographics_auc_data_overall <- demographics_auc_data_overall %>% unite("95% CI", LB:UB, sep = "-")
+
+demographics_auc_table <- demographics_auc_data_overall %>% tableGrob()
+
+grid.draw(ggplotGrob(demographics_roc_combined))
+demographics_auc_table_vp <- viewport(x = 0.70, y = 0.22, 
+                                                     just = c("right", "bottom"),
+                                                     height = 0.1, width = 0.2)
+pushViewport(demographics_auc_table_vp)
+grid.draw(demographics_auc_table)
+
+popViewport()
+
+########################################
+### 12. All data - nested cross validation model 
+
+outer_cv_accuracies <- sapply(outer_cv_results, function(result) result$confusionMatrix$overall["Accuracy"])
+roc_aucs <- sapply(outer_cv_results, function(result) result$roc_auc)
+mean_accuracy <- mean(outer_cv_accuracies)
+std_accuracy <- sd(outer_cv_accuracies)
+mean_roc_auc <- mean(roc_aucs)
+std_roc_auc <- sd(roc_aucs)
+
+cat(sprintf("Nested CV Accuracy: %.4f ± %.4f\n", mean_accuracy, std_accuracy))
+cat(sprintf("Nested CV ROC AUC: %.4f ± %.4f\n", mean_roc_auc, std_roc_auc))
+
+final_models <- lapply(outer_cv_results, function(result) result$final_model)
+
+cv_accuracies_tibble <- as_tibble(outer_cv_accuracies)
+colnames(cv_accuracies_tibble) <- ("Accuracy")
+cv_accuracies_tibble$Accuracy <- round(cv_accuracies_tibble$Accuracy, digits = 3)
+roc_aucs_tibble <- as_tibble(roc_aucs)
+colnames(roc_aucs_tibble) <- ("ROC AUC")
+roc_aucs_tibble$`ROC AUC` <- round(roc_aucs_tibble$`ROC AUC`, digits = 3)
+
+
+cbind("Model" = c("Model 1", "Model 2", "Model 3", "Model 4", "Model 5"),
+      "Accuracy"= cv_accuracies_tibble,
+      "AUC" = roc_aucs_tibble) %>% as_tibble() %>% gt()
+
+# Using point 12 you can ascertain which model performs best and can therefore extract this from the final_models object
+
+# For example - the confusion matrix for model 5:
+print(outer_cv_results[[5]]$cm)
+
+# For example the ROC curve for model 5:
+plot(outer_cv_results[[5]]$roc)
