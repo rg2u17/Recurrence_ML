@@ -16,7 +16,7 @@ The dataset building script 4 (ascertain kidney stone formers) currently derives
 Recurrence is defined as intervention or ureteric colic >6 months after the previous episode. 
 For 5 and 10 year recurrence rates, if an individual has not reached 5/10 years of follow-up and has not had a recurrence within that time they have been excluded from the cohort.
 
-#### 2. Clean, Preprocess, Model building and Validation scripts are:     
+#### 2. Cleaning, Preprocessing, Model building and Validation scripts are:     
   7. Data cleaning
   8. Preprocessing
   9. Modelling
