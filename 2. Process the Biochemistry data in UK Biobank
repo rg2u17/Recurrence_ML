@@ -1,0 +1,127 @@
+##################################
+### 1. Get data ##################
+
+# This script presumes you have access to the following csv files:
+
+demographics <- c(participant_id,
+                  calcium_instance_0,
+                  calcium_instance_1,
+                  albumin_instance_0,
+                  albumin_instance_1,
+                  vitamin_d_instance_0,
+                  vitamin_d_instance_1,
+                  phosphate_instance_0,
+                  phosphate_instance_1,
+                  waist_circumference_instance_0,
+                  waist_circumference_instance_1,
+                  waist_circumference_instance_2,
+                  waist_circumference_instance_3,
+                  creatinine_instance_0,
+                  creatinine_instance_1,
+                  hdl_cholesterol_instance_0,
+                  hdl_cholesterol_instance_1,
+                  triglycerides_instance_0,
+                  triglycerides_instance_1,
+                  ldl_direct_instance_0,
+                  ldl_direct_instance_1,
+                  glycated_haemoglobin_hb_a1c_instance_0,
+                  glycated_haemoglobin_hb_a1c_instance_1,
+                  cystatin_c_instance_0,
+                  cystatin_c_instance_1,
+                  urea_instance_0,
+                  urea_instance_1,
+                  sodium_in_urine_instance_0,
+                  sodium_in_urine_instance_1,
+                  creatinine_enzymatic_in_urine_instance_0,
+                  creatinine_enzymatic_in_urine_instance_1,
+                  potassium_in_urine_instance_0,
+                  potassium_in_urine_instance_1,
+                  hip_circumference_instance_0,
+                  hip_circumference_instance_1,
+                  hip_circumference_instance_2,
+                  hip_circumference_instance_3,
+                  body_mass_index_bmi_instance_0,
+                  body_mass_index_bmi_instance_1,
+                  body_mass_index_bmi_instance_2,
+                  body_mass_index_bmi_instance_3,
+                  urate_instance_0,
+                  urate_instance_1,
+                  sex,
+                  alkaline_phosphatase_instance_0,
+                  alkaline_phosphatase_instance_1
+)
+
+additional_bloods <- c(participant_id,
+                       alanine_aminotransferase_instance_0,
+                       alanine_aminotransferase_instance_1,
+                       glucose_instance_0,
+                       glucose_instance_1,
+                       aspartate_aminotransferase_instance_0,
+                       aspartate_aminotransferase_instance_1,
+                       direct_bilirubin_instance_0,
+                       direct_bilirubin_instance_1
+)
+
+
+###################################
+### 2. Load R packages ############
+
+library(tidyverse)
+library(janitor)
+
+###################################
+### 3. Sort data ##################
+
+demographics <- demographics %>% mutate(
+  calcium = coalesce(calcium_instance_0, calcium_instance_1),
+  albumin = coalesce(albumin_instance_0, albumin_instance_1),
+  vitamin_d = coalesce(vitamin_d_instance_0, vitamin_d_instance_1),
+  phosphate = coalesce(phosphate_instance_0, phosphate_instance_1),
+  waist_circumference = coalesce(waist_circumference_instance_0, 
+                                 waist_circumference_instance_1,
+                                 waist_circumference_instance_2,
+                                 waist_circumference_instance_3),
+  creatinine = coalesce(creatinine_instance_0, creatinine_instance_1),
+  hdl = coalesce(hdl_cholesterol_instance_0, hdl_cholesterol_instance_1),
+  triglycerides = coalesce(triglycerides_instance_0, triglycerides_instance_1),
+  ldl = coalesce(ldl_direct_instance_0, ldl_direct_instance_1),
+  hba1c = coalesce(glycated_haemoglobin_hb_a1c_instance_0, glycated_haemoglobin_hb_a1c_instance_1),
+  cystatin_c = coalesce(cystatin_c_instance_0, cystatin_c_instance_1),
+  alp = coalesce(alkaline_phosphatase_instance_0, alkaline_phosphatase_instance_1),
+  urea = coalesce(urea_instance_0, urea_instance_1),
+  na_urine = coalesce(sodium_in_urine_instance_0, sodium_in_urine_instance_1),
+  k_urine = coalesce(potassium_in_urine_instance_0, potassium_in_urine_instance_1),
+  creatinine_urine = coalesce(creatinine_enzymatic_in_urine_instance_0, creatinine_enzymatic_in_urine_instance_1),
+  hip_circumference = coalesce(hip_circumference_instance_0,
+                               hip_circumference_instance_1,
+                               hip_circumference_instance_2,
+                               hip_circumference_instance_3),
+  bmi = coalesce(body_mass_index_bmi_instance_0,
+                 body_mass_index_bmi_instance_1,
+                 body_mass_index_bmi_instance_2,
+                 body_mass_index_bmi_instance_3),
+  urate = coalesce(urate_instance_0,
+                   urate_instance_1)
+  ,
+  .keep = "unused"
+) %>% mutate(
+  whr = hip_circumference/waist_circumference,
+  adjca = calcium + (0.02*(40-albumin))
+)
+
+demographics$sex <- as.factor(demographics$sex)
+demographics$sex <- recode_factor(demographics$sex,
+                                  "0" = "Female",
+                                  "1" = "Male")
+
+additional_bloods <- additional_bloods %>% mutate(
+  alt = coalesce(alanine_aminotransferase_instance_0, alanine_aminotransferase_instance_1),
+  glucose = coalesce(glucose_instance_0, glucose_instance_1),
+  ast = coalesce(aspartate_aminotransferase_instance_0, aspartate_aminotransferase_instance_1),
+  bilirubin = coalesce(direct_bilirubin_instance_0, direct_bilirubin_instance_1),
+  .keep = "unused"
+)
+
+demographics <- demographics %>% left_join(additional_bloods, by = c("participant_id" = "participant_id"))
+
+demographics_for_gwas <- demographics
